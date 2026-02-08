@@ -12,9 +12,6 @@ arieo_engine_project(
         ${CMAKE_CURRENT_SOURCE_DIR}/private/src/*/*.cpp
     INTERFACES
         Arieo-Interface-Archive::arieo_archive_interface
-    PACKAGES
-        Arieo-Interface-Archive
-        Arieo-Core
     PRIVATE_LIBS
         arieo::base
         arieo::core
