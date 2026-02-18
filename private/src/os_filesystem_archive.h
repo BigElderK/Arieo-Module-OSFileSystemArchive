@@ -82,6 +82,11 @@ namespace Arieo
     public:
         Interface::Archive::IArchive* createArchive(const std::filesystem::path& root_path) override
         {
+            if(std::filesystem::exists(root_path) == false || std::filesystem::is_directory(root_path) == false)
+            {
+                Core::Logger::error("Invalid archive root path: {}", root_path.string());
+                return nullptr;
+            }
             return Base::newT<OSFileSystemArchive>(root_path);
         }
 
