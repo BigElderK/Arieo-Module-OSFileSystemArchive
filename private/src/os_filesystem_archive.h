@@ -80,7 +80,7 @@ namespace Arieo
 
         }
     public:
-        Interface::Archive::IArchive* createArchive(const std::filesystem::path& root_path) override
+        Base::Interface<Interface::Archive::IArchive> createArchive(const std::filesystem::path& root_path) override
         {
             if(std::filesystem::exists(root_path) == false || std::filesystem::is_directory(root_path) == false)
             {
@@ -90,9 +90,9 @@ namespace Arieo
             return Base::newT<OSFileSystemArchive>(root_path);
         }
 
-        void destroyArchive(Interface::Archive::IArchive* archive) override
+        void destroyArchive(Base::Interface<Interface::Archive::IArchive> archive) override
         {
-            OSFileSystemArchive* os_filesystem_archive = Base::castInterfaceToInstance<OSFileSystemArchive>(archive);
+            OSFileSystemArchive* os_filesystem_archive = archive.castTo<OSFileSystemArchive>();
             return Base::deleteT(os_filesystem_archive);
         }
     };
