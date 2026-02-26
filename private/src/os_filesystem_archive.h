@@ -8,7 +8,7 @@ namespace Arieo
     {
     protected:
         std::filesystem::path m_root_path;
-        std::unordered_map<std::filesystem::path, std::tuple<void*, size_t>> m_file_buffer_cache_map;
+        std::unordered_map<std::string, std::tuple<void*, size_t>> m_file_buffer_cache_map;
     public:
         OSFileSystemArchive(std::filesystem::path root_path)
             : m_root_path(root_path)
@@ -21,22 +21,22 @@ namespace Arieo
             clearCache();
         }
 
-        std::tuple<void*, size_t> getFileBuffer(const std::filesystem::path& relative_path) override
+        Interface::Archive::FileBuffer getFileBuffer(const Base::Parameter::String& relative_path) override
         {
-            auto found_cache_iter = m_file_buffer_cache_map.find(relative_path);
+            auto found_cache_iter = m_file_buffer_cache_map.find(relative_path.getString());
             if(found_cache_iter != m_file_buffer_cache_map.end())
             {
-                return found_cache_iter->second;
+                return Interface::Archive::FileBuffer{std::get<0>(found_cache_iter->second), std::get<1>(found_cache_iter->second)};
             }
             else
             {
-                std::filesystem::path full_path = m_root_path / relative_path;
+                std::filesystem::path full_path = m_root_path / relative_path.getString();
 
                 std::ifstream file(full_path, std::ios::binary | std::ios::ate);
                 if(file.is_open() == false)
                 {
                     Core::Logger::error("Cannot open file: {}", full_path.string());
-                    return std::make_tuple(nullptr, 0);
+                    return Interface::Archive::FileBuffer{nullptr, 0};
                 }
 
                 size_t buffer_size = file.tellg();
@@ -47,11 +47,11 @@ namespace Arieo
                 {
                     Core::Logger::error("Cannot read file: {}", full_path.string());
                     Base::Memory::free(buffer);
-                    return std::make_tuple(nullptr, 0);
+                    return Interface::Archive::FileBuffer{nullptr, 0};
                 }
 
-                m_file_buffer_cache_map.emplace(relative_path, std::make_tuple(buffer, buffer_size));
-                return std::make_tuple(buffer, buffer_size);
+                m_file_buffer_cache_map.emplace(relative_path.getString(), std::make_tuple(buffer, buffer_size));
+                return Interface::Archive::FileBuffer{buffer, buffer_size};
             }
         }
 
@@ -80,14 +80,15 @@ namespace Arieo
 
         }
     public:
-        Base::Interface<Interface::Archive::IArchive> createArchive(const std::filesystem::path& root_path) override
+        Base::Interface<Interface::Archive::IArchive> createArchive(const Base::Parameter::String& root_path) override
         {
-            if(std::filesystem::exists(root_path) == false || std::filesystem::is_directory(root_path) == false)
+            std::filesystem::path root_path_fs(root_path.getString());
+            if(std::filesystem::exists(root_path_fs) == false || std::filesystem::is_directory(root_path_fs) == false)
             {
-                Core::Logger::error("Invalid archive root path: {}", root_path.string());
+                Core::Logger::error("Invalid archive root path: {}", root_path_fs.string());
                 return nullptr;
             }
-            return Base::Interface<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path);
+            return Base::Interface<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path_fs.string());
         }
 
         void destroyArchive(Base::Interface<Interface::Archive::IArchive> archive) override
