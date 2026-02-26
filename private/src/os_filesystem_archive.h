@@ -87,13 +87,12 @@ namespace Arieo
                 Core::Logger::error("Invalid archive root path: {}", root_path.string());
                 return nullptr;
             }
-            return Base::newT<OSFileSystemArchive>(root_path);
+            return Base::Interface<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path);
         }
 
         void destroyArchive(Base::Interface<Interface::Archive::IArchive> archive) override
         {
-            OSFileSystemArchive* os_filesystem_archive = archive.castTo<OSFileSystemArchive>();
-            return Base::deleteT(os_filesystem_archive);
+            archive.destroyAs<OSFileSystemArchive>();
         }
     };
 }
