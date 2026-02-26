@@ -3,12 +3,37 @@
 #include <fstream>
 namespace Arieo
 {
+    class FileBuffer
+        : public Interface::Archive::IFileBuffer
+    {
+    protected:
+        void* m_buffer = nullptr;
+        size_t m_size = 0;
+    public:
+        FileBuffer(void* buffer, size_t size)
+            : m_buffer(buffer), m_size(size)
+        {
+        }
+
+        ~FileBuffer()
+        {
+            if(m_buffer)
+            {
+                Base::Memory::free(m_buffer);
+                m_buffer = nullptr;
+            }
+        }
+
+        void* getBuffer() override { return m_buffer; }
+        size_t getBufferSize() override { return m_size; }
+    };
+
     class OSFileSystemArchive
         : public Interface::Archive::IArchive
     {
     protected:
         std::filesystem::path m_root_path;
-        std::unordered_map<std::string, std::tuple<void*, size_t>> m_file_buffer_cache_map;
+        std::unordered_set<Base::Interface<Interface::Archive::IFileBuffer>> m_file_buffers;
     public:
         OSFileSystemArchive(std::filesystem::path root_path)
             : m_root_path(root_path)
@@ -21,48 +46,46 @@ namespace Arieo
             clearCache();
         }
 
-        Interface::Archive::FileBuffer getFileBuffer(const Base::Parameter::String& relative_path) override
+        Base::Interface<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::Parameter::String& relative_path) override
         {
-            auto found_cache_iter = m_file_buffer_cache_map.find(relative_path.getString());
-            if(found_cache_iter != m_file_buffer_cache_map.end())
+            std::filesystem::path full_path = m_root_path / relative_path.getString();
+
+            std::ifstream file(full_path, std::ios::binary | std::ios::ate);
+            if(file.is_open() == false)
             {
-                return Interface::Archive::FileBuffer{std::get<0>(found_cache_iter->second), std::get<1>(found_cache_iter->second)};
+                Core::Logger::error("Cannot open file: {}", full_path.string());
+                return nullptr;
             }
-            else
+
+            size_t buffer_size = file.tellg();
+            void* buffer = Base::Memory::malloc(buffer_size);
+            
+            file.seekg(0, std::ios::beg);
+            if(!file.read((char*)buffer, buffer_size))
             {
-                std::filesystem::path full_path = m_root_path / relative_path.getString();
-
-                std::ifstream file(full_path, std::ios::binary | std::ios::ate);
-                if(file.is_open() == false)
-                {
-                    Core::Logger::error("Cannot open file: {}", full_path.string());
-                    return Interface::Archive::FileBuffer{nullptr, 0};
-                }
-
-                size_t buffer_size = file.tellg();
-                void* buffer = Base::Memory::malloc(buffer_size);
-                
-                file.seekg(0, std::ios::beg);
-                if(!file.read((char*)buffer, buffer_size))
-                {
-                    Core::Logger::error("Cannot read file: {}", full_path.string());
-                    Base::Memory::free(buffer);
-                    return Interface::Archive::FileBuffer{nullptr, 0};
-                }
-
-                m_file_buffer_cache_map.emplace(relative_path.getString(), std::make_tuple(buffer, buffer_size));
-                return Interface::Archive::FileBuffer{buffer, buffer_size};
+                Core::Logger::error("Cannot read file: {}", full_path.string());
+                Base::Memory::free(buffer);
+                return nullptr;
             }
+
+            auto file_buffer = Base::Interface<Interface::Archive::IFileBuffer>::createAs<FileBuffer>(buffer, buffer_size);
+            m_file_buffers.insert(file_buffer);
+            return file_buffer;
+        }
+
+        void releaseFileBuffer(Base::Interface<Interface::Archive::IFileBuffer> file_buffer) override
+        {
+            m_file_buffers.erase(file_buffer);
+            file_buffer.destroyAs<FileBuffer>();
         }
 
         void clearCache()
         {
-            for(auto iter : m_file_buffer_cache_map)
+            for(auto fb : m_file_buffers)
             {
-                void* buffer = std::get<0>(iter.second);
-                Base::Memory::free(buffer);
+                fb.destroyAs<FileBuffer>();
             }
-            m_file_buffer_cache_map.clear();
+            m_file_buffers.clear();
         }
     };
 
