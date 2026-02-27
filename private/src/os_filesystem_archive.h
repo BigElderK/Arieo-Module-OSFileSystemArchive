@@ -33,7 +33,7 @@ namespace Arieo
     {
     protected:
         std::filesystem::path m_root_path;
-        std::unordered_set<Base::Interface<Interface::Archive::IFileBuffer>> m_file_buffers;
+        std::unordered_set<Base::Interop<Interface::Archive::IFileBuffer>> m_file_buffers;
     public:
         OSFileSystemArchive(std::filesystem::path root_path)
             : m_root_path(root_path)
@@ -46,7 +46,7 @@ namespace Arieo
             clearCache();
         }
 
-        Base::Interface<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::Parameter::String& relative_path) override
+        Base::Interop<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::Interop<std::string_view>& relative_path) override
         {
             std::filesystem::path full_path = m_root_path / relative_path.getString();
 
@@ -68,12 +68,12 @@ namespace Arieo
                 return nullptr;
             }
 
-            auto file_buffer = Base::Interface<Interface::Archive::IFileBuffer>::createAs<FileBuffer>(buffer, buffer_size);
+            auto file_buffer = Base::Interop<Interface::Archive::IFileBuffer>::createAs<FileBuffer>(buffer, buffer_size);
             m_file_buffers.insert(file_buffer);
             return file_buffer;
         }
 
-        void releaseFileBuffer(Base::Interface<Interface::Archive::IFileBuffer> file_buffer) override
+        void releaseFileBuffer(Base::Interop<Interface::Archive::IFileBuffer> file_buffer) override
         {
             m_file_buffers.erase(file_buffer);
             file_buffer.destroyAs<FileBuffer>();
@@ -103,7 +103,7 @@ namespace Arieo
 
         }
     public:
-        Base::Interface<Interface::Archive::IArchive> createArchive(const Base::Parameter::String& root_path) override
+        Base::Interop<Interface::Archive::IArchive> createArchive(const Base::Interop<std::string_view>& root_path) override
         {
             std::filesystem::path root_path_fs(root_path.getString());
             if(std::filesystem::exists(root_path_fs) == false || std::filesystem::is_directory(root_path_fs) == false)
@@ -111,10 +111,10 @@ namespace Arieo
                 Core::Logger::error("Invalid archive root path: {}", root_path_fs.string());
                 return nullptr;
             }
-            return Base::Interface<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path_fs.string());
+            return Base::Interop<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path_fs.string());
         }
 
-        void destroyArchive(Base::Interface<Interface::Archive::IArchive> archive) override
+        void destroyArchive(Base::Interop<Interface::Archive::IArchive> archive) override
         {
             archive.destroyAs<OSFileSystemArchive>();
         }
