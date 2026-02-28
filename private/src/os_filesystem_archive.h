@@ -4,7 +4,7 @@
 namespace Arieo
 {
     class FileBuffer
-        : public Interface::Archive::IFileBuffer
+        : public Base::IBuffer
     {
     protected:
         void* m_buffer = nullptr;
@@ -33,7 +33,7 @@ namespace Arieo
     {
     protected:
         std::filesystem::path m_root_path;
-        std::unordered_set<Base::Interop::SharedRef<Interface::Archive::IFileBuffer>> m_file_buffers;
+        std::unordered_set<Base::Interop::SharedRef<Base::IBuffer>> m_file_buffers;
     public:
         OSFileSystemArchive(std::filesystem::path root_path)
             : m_root_path(root_path)
@@ -46,7 +46,7 @@ namespace Arieo
             clearCache();
         }
 
-        Base::Interop::SharedRef<Interface::Archive::IFileBuffer> aquireFileBuffer(Base::Interop::StringView related_path) override
+        Base::Interop::SharedRef<Base::IBuffer> aquireFileBuffer(Base::Interop::StringView related_path) override
         {
             std::filesystem::path full_path = m_root_path / related_path.getString();
 
@@ -68,7 +68,7 @@ namespace Arieo
                 return nullptr;
             }
 
-            auto file_buffer = Base::Interop::createInstance<Interface::Archive::IFileBuffer, FileBuffer>(buffer, buffer_size);
+            auto file_buffer = Base::Interop::createInstance<Base::IBuffer, FileBuffer>(buffer, buffer_size);
             return file_buffer;
         }
 
