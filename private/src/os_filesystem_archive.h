@@ -33,7 +33,7 @@ namespace Arieo
     {
     protected:
         std::filesystem::path m_root_path;
-        std::unordered_set<Base::Interop<Interface::Archive::IFileBuffer>> m_file_buffers;
+        std::unordered_set<Base::Interop::SharedRef<Interface::Archive::IFileBuffer>> m_file_buffers;
     public:
         OSFileSystemArchive(std::filesystem::path root_path)
             : m_root_path(root_path)
@@ -46,7 +46,7 @@ namespace Arieo
             clearCache();
         }
 
-        Base::Interop<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::Interop<std::string_view>& relative_path) override
+        Base::Interop::SharedRef<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::InteropOld<std::string_view>& relative_path) override
         {
             std::filesystem::path full_path = m_root_path / relative_path.getString();
 
@@ -68,24 +68,12 @@ namespace Arieo
                 return nullptr;
             }
 
-            auto file_buffer = Base::Interop<Interface::Archive::IFileBuffer>::createAs<FileBuffer>(buffer, buffer_size);
-            m_file_buffers.insert(file_buffer);
+            auto file_buffer = Base::Interop::createInstance<Interface::Archive::IFileBuffer, FileBuffer>(buffer, buffer_size);
             return file_buffer;
-        }
-
-        void releaseFileBuffer(Base::Interop<Interface::Archive::IFileBuffer> file_buffer) override
-        {
-            m_file_buffers.erase(file_buffer);
-            Base::Interop<Interface::Archive::IFileBuffer>::destroyAs<FileBuffer>(std::move(file_buffer));
         }
 
         void clearCache()
         {
-            for(auto fb : m_file_buffers)
-            {
-                Base::Interop<Interface::Archive::IFileBuffer>::destroyAs<FileBuffer>(std::move(fb));
-            }
-            m_file_buffers.clear();
         }
     };
 
@@ -103,7 +91,7 @@ namespace Arieo
 
         }
     public:
-        Base::Interop<Interface::Archive::IArchive> createArchive(const Base::Interop<std::string_view>& root_path) override
+        Base::Interop::SharedRef<Interface::Archive::IArchive> createArchive(const Base::InteropOld<std::string_view>& root_path) override
         {
             std::filesystem::path root_path_fs(root_path.getString());
             if(std::filesystem::exists(root_path_fs) == false || std::filesystem::is_directory(root_path_fs) == false)
@@ -111,12 +99,7 @@ namespace Arieo
                 Core::Logger::error("Invalid archive root path: {}", root_path_fs.string());
                 return nullptr;
             }
-            return Base::Interop<Interface::Archive::IArchive>::createAs<OSFileSystemArchive>(root_path_fs.string());
-        }
-
-        void destroyArchive(Base::Interop<Interface::Archive::IArchive> archive) override
-        {
-            Base::Interop<Interface::Archive::IArchive>::destroyAs<OSFileSystemArchive>(std::move(archive));
+            return Base::Interop::createInstance<Interface::Archive::IArchive, OSFileSystemArchive>(root_path_fs.string());
         }
     };
 }
