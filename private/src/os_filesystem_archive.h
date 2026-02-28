@@ -76,14 +76,14 @@ namespace Arieo
         void releaseFileBuffer(Base::Interop<Interface::Archive::IFileBuffer> file_buffer) override
         {
             m_file_buffers.erase(file_buffer);
-            file_buffer.destroyAs<FileBuffer>();
+            Base::Interop<Interface::Archive::IFileBuffer>::destroyAs<FileBuffer>(std::move(file_buffer));
         }
 
         void clearCache()
         {
             for(auto fb : m_file_buffers)
             {
-                fb.destroyAs<FileBuffer>();
+                Base::Interop<Interface::Archive::IFileBuffer>::destroyAs<FileBuffer>(std::move(fb));
             }
             m_file_buffers.clear();
         }
@@ -116,7 +116,7 @@ namespace Arieo
 
         void destroyArchive(Base::Interop<Interface::Archive::IArchive> archive) override
         {
-            archive.destroyAs<OSFileSystemArchive>();
+            Base::Interop<Interface::Archive::IArchive>::destroyAs<OSFileSystemArchive>(std::move(archive));
         }
     };
 }
