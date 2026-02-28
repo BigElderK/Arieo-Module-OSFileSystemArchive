@@ -46,9 +46,9 @@ namespace Arieo
             clearCache();
         }
 
-        Base::Interop::SharedRef<Interface::Archive::IFileBuffer> aquireFileBuffer(const Base::InteropOld<std::string_view>& relative_path) override
+        Base::Interop::SharedRef<Interface::Archive::IFileBuffer> aquireFileBuffer(const std::string& relative_path) override
         {
-            std::filesystem::path full_path = m_root_path / relative_path.getString();
+            std::filesystem::path full_path = m_root_path / relative_path;
 
             std::ifstream file(full_path, std::ios::binary | std::ios::ate);
             if(file.is_open() == false)
@@ -91,9 +91,9 @@ namespace Arieo
 
         }
     public:
-        Base::Interop::SharedRef<Interface::Archive::IArchive> createArchive(const Base::InteropOld<std::string_view>& root_path) override
+        Base::Interop::SharedRef<Interface::Archive::IArchive> createArchive(const std::string& root_path) override
         {
-            std::filesystem::path root_path_fs(root_path.getString());
+            std::filesystem::path root_path_fs(root_path);
             if(std::filesystem::exists(root_path_fs) == false || std::filesystem::is_directory(root_path_fs) == false)
             {
                 Core::Logger::error("Invalid archive root path: {}", root_path_fs.string());
@@ -103,3 +103,7 @@ namespace Arieo
         }
     };
 }
+
+
+
+
