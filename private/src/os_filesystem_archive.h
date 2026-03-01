@@ -3,7 +3,7 @@
 #include <fstream>
 namespace Arieo
 {
-    class FileBuffer
+    class FileBuffer final
         : public Base::IBuffer
     {
     protected:
@@ -28,7 +28,7 @@ namespace Arieo
         size_t getBufferSize() override { return m_size; }
     };
 
-    class OSFileSystemArchive
+    class OSFileSystemArchive final
         : public Interface::Archive::IArchive
     {
     protected:
@@ -77,7 +77,7 @@ namespace Arieo
         }
     };
 
-    class OSFileSystemArchiveManager
+    class OSFileSystemArchiveManager final
         : public Interface::Archive::IArchiveManager
     {
     public:

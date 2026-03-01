@@ -10,23 +10,24 @@ namespace Arieo
 
         static struct DllLoader
         {
-            OSFileSystemArchiveManager os_filesystem_archive_manager;
+            OSFileSystemArchiveManager os_file_system_archive_manager_instance;
+            Base::Interop::SharedRef<Interface::Archive::IArchiveManager> archive_manager = Base::Interop::makePersistentShared<Interface::Archive::IArchiveManager>(os_file_system_archive_manager_instance);
 
             DllLoader()
             {
-                os_filesystem_archive_manager.initialize();
+                os_file_system_archive_manager_instance.initialize();
                 Core::ModuleManager::registerInterface<Interface::Archive::IArchiveManager>(
-                    "os_filesystem_archive", 
-                    &os_filesystem_archive_manager
+                    "os_filesystem_archive",
+                    archive_manager
                 );
             }
 
             ~DllLoader()
             {
                 Core::ModuleManager::unregisterInterface<Interface::Archive::IArchiveManager>(
-                    &os_filesystem_archive_manager
+                    archive_manager
                 );
-                os_filesystem_archive_manager.finalize();
+                os_file_system_archive_manager_instance.finalize();
             }
         } dll_loader;
     }
