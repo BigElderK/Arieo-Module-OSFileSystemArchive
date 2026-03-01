@@ -46,7 +46,7 @@ namespace Arieo
             clearCache();
         }
 
-        Base::Interop::SharedRef<Base::IBuffer> aquireFileBuffer(Base::Interop::StringView related_path) override
+        Base::Interop::SharedRef<Base::IBuffer> aquireFileBuffer(const Base::Interop::StringView& related_path) override
         {
             std::filesystem::path full_path = m_root_path / related_path.getString();
 
@@ -91,7 +91,7 @@ namespace Arieo
 
         }
     public:
-        Base::Interop::SharedRef<Interface::Archive::IArchive> createArchive(Base::Interop::StringView root_path) override
+        Base::Interop::SharedRef<Interface::Archive::IArchive> createArchive(const Base::Interop::StringView& root_path) override
         {
             std::filesystem::path root_path_fs(root_path.getString());
             if(std::filesystem::exists(root_path_fs) == false || std::filesystem::is_directory(root_path_fs) == false)
