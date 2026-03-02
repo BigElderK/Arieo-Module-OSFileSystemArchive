@@ -3,31 +3,6 @@
 #include <fstream>
 namespace Arieo
 {
-    class FileBuffer final
-        : public Base::IBuffer
-    {
-    protected:
-        void* m_buffer = nullptr;
-        size_t m_size = 0;
-    public:
-        FileBuffer(void* buffer, size_t size)
-            : m_buffer(buffer), m_size(size)
-        {
-        }
-
-        ~FileBuffer()
-        {
-            if(m_buffer)
-            {
-                Base::Memory::free(m_buffer);
-                m_buffer = nullptr;
-            }
-        }
-
-        void* getBuffer() override { return m_buffer; }
-        size_t getBufferSize() override { return m_size; }
-    };
-
     class OSFileSystemArchive final
         : public Interface::Archive::IArchive
     {
@@ -68,8 +43,14 @@ namespace Arieo
                 return nullptr;
             }
 
-            auto file_buffer = Base::Interop::createInstance<Base::IBuffer, FileBuffer>(buffer, buffer_size);
-            return file_buffer;
+            return Base::Interop::SharedRef<Base::IBuffer>::createInstance<Base::Buffer>(
+                buffer, 
+                buffer_size,
+                [](const void* data, size_t size)
+                {
+                    Base::Memory::free(const_cast<void*>(data));
+                }
+            );
         }
 
         void clearCache()
@@ -99,7 +80,7 @@ namespace Arieo
                 Core::Logger::error("Invalid archive root path: {}", root_path_fs.string());
                 return nullptr;
             }
-            return Base::Interop::createInstance<Interface::Archive::IArchive, OSFileSystemArchive>(root_path_fs.string());
+            return Base::Interop::SharedRef<Interface::Archive::IArchive>::createInstance<OSFileSystemArchive>(root_path_fs);
         }
     };
 }
